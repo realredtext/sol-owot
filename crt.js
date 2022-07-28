@@ -5,7 +5,7 @@ function rangedRandom(min, max) {
 function colorSplatter(minX, maxX, minY, maxY) {
     for(let e = 0; e < 8; e++) {
         for(let i = 0; i < 16; i++) {
-            writeBuffer.push([rangedRandom(minY, maxY), rangedRandom(minX, maxX), x, e, i, Date.now, "█", nextObjId, color]);
+            writeBuffer.push([rangedRandom(minY, maxY), rangedRandom(minX, maxX), x, e, i, Date.now, "█", nextObjId, Math.round(Math.random() * 16777214)]);
         };
     };
 };
