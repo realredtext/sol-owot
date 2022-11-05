@@ -65,7 +65,7 @@ var clearrange_subcommands = {
 client_commands.clearrange = ([subcommand]) => {
     if(!subcommand) {
         sel.startSelection();
-        clearerChatResponse("Select area to be cleared");
+        clearerChatResponse("Select tiles to be cleared");
     } else {
         if(subcommand in clearrange_subcommands) {
             clearrange_subcommands[subcommand]();
