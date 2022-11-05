@@ -62,7 +62,7 @@ var clearrange_subcommands = {
         clearerChatResponse("<ul><li>• Do not use outside of spawn due to lower rate limit</li><li>• Large selected areas will not be fully cleared, use multiple times</li><li>• Selecting one character of a tile will clear that tile</li></ul>");
     }
 };
-client_commands.clearrange = ([subcommand]) => {
+client_commands.clear = ([subcommand]) => {
     if(!subcommand) {
         sel.startSelection();
         clearerChatResponse("Select tiles to be cleared");
