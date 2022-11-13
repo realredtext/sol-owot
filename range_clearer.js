@@ -39,9 +39,6 @@ function clearTileRange(minX, minY, maxX, maxY) {
         };
     };
 };
-function clearTileRangeHelp() {
-    console.log("===IN-CONSOLE MANUAL===\nDo not use outside of spawn.\nLarge selected areas will not be fully cleared, use multiple times.")
-};
 var sel = new RegionSelection();
 sel.charColor = "#ff0000";
 sel.color = "rgba(123, 123, 123, 0.1)";
