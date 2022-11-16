@@ -42,6 +42,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
 var sel = new RegionSelection();
 sel.charColor = "#ff0000";
 sel.color = "rgba(123, 123, 123, 0.1)";
+sel.tiled = true;
 sel.init();
 sel.onselection(function(coordA, coordB, regWidth, regHeight) {
     var minTileX = coordA[0];
