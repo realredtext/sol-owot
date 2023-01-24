@@ -7,14 +7,14 @@ function colorSplatter(minX, maxX, minY, maxY) { //tile dimensions
         socket.send(JSON.stringify({
             kind: "write",
             edits: [
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 0, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 1, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 2, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 3, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 4, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 5, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 6, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)],
-                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 7, charX, Date.now(), "█", 10, Math.floor(Math.random() * 16777216)]
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 0, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 1, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 2, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 3, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 4, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 5, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 6, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)],
+                [rangedRandom(minY, maxY), rangedRandom(minX, maxX), 7, charX, Date.now(), String.fromCharCode(Math.floor(Math.random()*144000)), 10, Math.floor(Math.random() * 16777216)]
             ]
         }));
     };
