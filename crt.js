@@ -20,4 +20,4 @@ function colorSplatter(minX, maxX, minY, maxY) { //tile dimensions
     };
 };
 
-// setInterval(()=>{colorSplatter(-20, 20, -20, 20)},1000)
+// setInterval(()=>{colorSplatter(-20, 20, -20, 20)},15)
