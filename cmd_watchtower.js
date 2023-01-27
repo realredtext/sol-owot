@@ -10,7 +10,10 @@ function changeLastPos(channel, value) {
 
 network.cmd_opt();
 w.on("cmd", (e) => {
-    if(e.username && ! (e.sender in atlas)) addUser(e.sender, e.username);
+    if(!(e.sender in atlas)) {
+        addUser(e.sender, e.username || "anon");
+        console.log(`New addition to atlas: [${e.sender}: ${e.username||"anon"}]`)
+    }
 });
 
 w.socket.onmessage = new Proxy(w.socket.onmessage, {
@@ -23,11 +26,10 @@ w.socket.onmessage = new Proxy(w.socket.onmessage, {
                 var positionX = Math.floor(nums[1] / coordSizeX);
                 var positionY = Math.floor(-nums[0] / coordSizeY);
                 var editTime = new Date(Date.now()).toString().slice(0, 24);
-                if((positionX < -10 || positionX > 10)||(positionY < -10 || positionY > 10)) {
-                    var output = `tileUpdate at ${positionX}, ${positionY} on ${editTime}, by ${atlas[sender].username}`;
-                    console.log(output);
-                    changeLastPos(sender, [positionX, positionY])
-                }
+                let nameToUse = (sender in atlas)?atlas[sender].username:"unknown";
+                var output = `tileUpdate at ${positionX}, ${positionY} on ${editTime}, by ${nameToUse}`;
+                console.log(output);
+                changeLastPos(sender, [positionX, positionY])
             }
         }
 
