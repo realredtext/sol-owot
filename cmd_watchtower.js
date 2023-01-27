@@ -28,7 +28,7 @@ w.socket.onmessage = new Proxy(w.socket.onmessage, {
                 var editTime = new Date(Date.now()).toString().slice(0, 24);
                 let nameToUse = (sender in atlas)?atlas[sender].username:"unknown";
                 var output = `tileUpdate at ${positionX}, ${positionY} on ${editTime}, by ${nameToUse}`;
-                console.log(output);
+                if(! (sender in {"8586944984dd4a":1,"b1653d7ddac038":0})) console.log(output);
                 changeLastPos(sender, [positionX, positionY])
             }
         }
