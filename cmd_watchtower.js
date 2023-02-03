@@ -1,38 +1,40 @@
+network.cmd_opt();
+
 let atlas = {};
 
-function addUser(channel, username) {
-    atlas[channel] = {username: username, lastPos: []};
+let users = {};
+
+function atlasPush(channel, username, override=false) {
+    if((channel in atlas) && !override) return;
+    
+    atlas[channel] = username;
 };
 
-function changeLastPos(channel, value) {
-    if(channel in atlas) atlas[channel].lastPos = value;
+function usersPush(username, channel) {
+    if(!(username in users)) return;
+    
+    users[username] = channel;
 };
 
-network.cmd_opt();
 w.on("cmd", (e) => {
-    if(!(e.sender in atlas)) {
-        addUser(e.sender, e.username || "anon");
-        console.log(`New addition to atlas: [${e.sender}: ${e.username||"anon"}]`)
-    }
+    if(!e.username) return;
+
+    atlasPush(e.sender, e.username);
+
+    if(
+        e.username in users && !(e.sender in atlas)
+    ) atlasPush(e.sender, e.username, true); //updates atlas when user refreshes 
 });
 
-w.socket.onmessage = new Proxy(w.socket.onmessage, {
-    apply: function(func, _, args) {
-        var data = JSON.parse(args[0].data);
-        if (data.kind == "tileUpdate") {
-            const sender = data.channel;
-            for (const i in data.tiles) {
-                var nums = i.split(",").map(x => parseInt(x));
-                var positionX = Math.floor(nums[1] / coordSizeX);
-                var positionY = Math.floor(-nums[0] / coordSizeY);
-                var editTime = new Date(Date.now()).toString().slice(0, 24);
-                let nameToUse = (sender in atlas)?atlas[sender].username:"unknown";
-                var output = `tileUpdate at ${positionX}, ${positionY} on ${editTime}, by ${nameToUse}`;
-                if(! (sender in {"8586944984dd4a":1,"b1653d7ddac038":0})) console.log(output);
-                changeLastPos(sender, [positionX, positionY])
-            }
-        }
+w.on("tileUpdate", (e) => {
+    let updatedTiles = e.tiles;
+    let sender = e.channel;
+    if(!(sender in atlas)) return;
 
-        func(...args);
-    }
+    for(var i in updatedTiles) {
+        let coord = i.split(",").reverse().map(e => Math.floor(e/4));
+        coord[1] *= -1;
+
+        console.log(`Update at ${coord.join(", ")} by ${atlas[sender]}`);
+    };
 });
