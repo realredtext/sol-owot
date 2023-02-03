@@ -23,7 +23,7 @@ w.on("cmd", (e) => {
 
     if(
         e.username in users && !(e.sender in atlas)
-    ) atlasPush(e.sender, e.username, true); //updates atlas when user refreshes 
+    ) atlasPush(e.sender, e.username, true); //updates atlas when user refreshes (kinda)
 });
 
 w.on("tileUpdate", (e) => {
