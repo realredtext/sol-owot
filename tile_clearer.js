@@ -1,19 +1,21 @@
-function wipeTile(tx, ty, char=" ") {
+window.wipeTile = function(tx, ty, char=" ") {
+    let edits = [];
     for(let x = 0; x < 16; x++) {
-        socket.send(JSON.stringify({
-            kind: "write",
-            edits: [
-                [ty, tx, 0, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 1, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 2, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 3, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 4, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 5, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 6, x, getDate(), char, nextObjId++, 0],
-                [ty, tx, 7, x, getDate(), char, nextObjId++, 0]
-            ]
-        }));
+        for(let y = 0; y < 8; y++) {
+            edits.push([ty, tx, y, x, Date.now(), char, 0, 0])
+        };
     };
+    socket.send(JSON.stringify({
+        kind: "write",
+        edits: edits
+    }));
+};
+if(state.userModel.is_member) window.wipeTile = function(tx, ty, char=" ") {
+    char = char[0];
+    socket.send(JSON.stringify({
+        kind: "write",
+        edits: [[ty, tx,0,0,getDate(),char.repeat(128),1,0]]
+    }));
 };
 var atcInfo = document.createElement("label");
 atcInfo.style.display = "none";
