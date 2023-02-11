@@ -1,3 +1,5 @@
+var slowMode = false;
+
 function clearTileRange(minX, minY, maxX, maxY) {
     let IntRange = (min, max) => {
         if(min > max) throw new RangeError("Minimun is greater than maximum!");
@@ -12,6 +14,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
     };
 
     window.wipeTile = function(tx, ty, char=" ") {
+        if(tiles[ty+","+tx].content.join("") === " ".repeat(128)) return;
         let edits = [];
         for(let x = 0; x < 16; x++) {
             edits.push(
@@ -51,7 +54,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
     };
     for(var i = 0; i < clearingList.length; i++) {
         let tile = clearingList[i];
-        setTimeout(()=>{wipeTile(...tile)}, i*7);
+        setTimeout(()=>{wipeTile(...tile)}, i*(slowMode?777:7));
     };
     clearingList = [];
 };
@@ -77,6 +80,10 @@ function clearerChatResponse(msg) {
 var clearrange_subcommands = {
     help: () => {
         clearerChatResponse("<ul><li>• Do not use outside of spawn due to lower rate limit</li><li>• Large selected areas will not be fully cleared, use multiple times</li><li>• Selecting one character of a tile will clear that tile</li></ul>");
+    },
+    slow: () => {
+        slowMode = !slowMode;
+        clearerChatResponse(`Slow mode set to ${sslowMode}`);
     }
 };
 client_commands.clear = ([subcommand]) => {
