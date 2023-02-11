@@ -81,7 +81,7 @@ var clearrange_subcommands = {
     },
     slow: () => {
         slowMode = !slowMode;
-        clearerChatResponse(`Slow mode set to ${sslowMode}`);
+        clearerChatResponse(`Slow mode set to ${slowMode}`);
     }
 };
 client_commands.clear = ([subcommand]) => {
