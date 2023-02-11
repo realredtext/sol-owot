@@ -20,16 +20,7 @@ function colorRandomTiles(range=10) {
         
         socket.send(JSON.stringify({
             kind: "write",
-            edits: [
-                [tileY, tileX, 0, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 1, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 2, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 3, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 4, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 5, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 6, charX, getDate(), "█", 10, randomColor],
-                [tileY, tileX, 7, charX, getDate(), "█", 10, randomColor]
-            ]
+            edits: edits
         }));
     });
 }
