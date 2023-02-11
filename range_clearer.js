@@ -58,9 +58,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
     };
     clearingList = [];
 };
-function clearTileRangeHelp() {
-    console.log("===IN-CONSOLE MANUAL===\nDo not use outside of spawn.\nLarge selected areas will not be fully cleared, use multiple times.")
-};
+
 var sel = new RegionSelection();
 sel.charColor = "#ff0000";
 sel.color = "rgba(123, 123, 123, 0.1)";
@@ -79,7 +77,7 @@ function clearerChatResponse(msg) {
 };
 var clearrange_subcommands = {
     help: () => {
-        clearerChatResponse("<ul><li>• Do not use outside of spawn due to lower rate limit</li><li>• Large selected areas will not be fully cleared, use multiple times</li><li>• Selecting one character of a tile will clear that tile</li></ul>");
+        clearerChatResponse("<ul><li>• Do not use outside of spawn on fast mode due to lower rate limit</li><li>• Very large selected areas will not be fully cleared, use multiple times</li></ul>");
     },
     slow: () => {
         slowMode = !slowMode;
