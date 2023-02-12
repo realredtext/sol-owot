@@ -1,15 +1,20 @@
 window.wipeTile = function(tx, ty, char=" ") {
-    let edits = [];
-    for(let x = 0; x < 16; x++) {
-        for(let y = 0; y < 8; y++) {
-            edits.push([ty, tx, y, x, Date.now(), char, 0, 0])
+        let tileCoord = ty+","+tx;
+        if(!tiles[tileCoord]) return;
+        let tileContent = tiles[tileCoord].content;
+        let edits = [];
+        for(var x = 0; x < 16; x++) {
+            for(var y = 0; y < 8; y++) {
+                if(tileContent[y*16 + x] === " ") continue;
+                edits.push([ty, tx, y, x, Date.now(), char, 0, 0]);
+            };
         };
+
+        socket.send(JSON.stringify({
+            kind: "write",
+            edits: edits
+        }));
     };
-    socket.send(JSON.stringify({
-        kind: "write",
-        edits: edits
-    }));
-};
 if(state.userModel.is_member) window.wipeTile = function(tx, ty, char=" ") {
     char = char[0];
     socket.send(JSON.stringify({
