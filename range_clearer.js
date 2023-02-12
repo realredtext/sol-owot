@@ -13,27 +13,24 @@ function clearTileRange(minX, minY, maxX, maxY) {
         return list;
     };
 
-    window.wipeTile = function(tx, ty, char=" ") {
-        if(tiles[ty+","+tx].content.join("") === " ".repeat(128)) return;
+    let wipeTile = function(tx, ty, char=" ") {
+        let tileCoord = ty+","+tx;
+        if(!tiles[tileCoord]) return;
+        let tileContent = tiles[tileCoord].content;
         let edits = [];
-        for(let x = 0; x < 16; x++) {
-            edits.push(
-                [ty, tx, 0, x, Date.now(), char, 0, 0],
-                [ty, tx, 1, x, Date.now(), char, 0, 0],
-                [ty, tx, 2, x, Date.now(), char, 0, 0],
-                [ty, tx, 3, x, Date.now(), char, 0, 0],
-                [ty, tx, 4, x, Date.now(), char, 0, 0],
-                [ty, tx, 5, x, Date.now(), char, 0, 0],
-                [ty, tx, 6, x, Date.now(), char, 0, 0],
-                [ty, tx, 7, x, Date.now(), char, 0, 0]
-            )
+        for(var x = 0; x < 16; x++) {
+            for(var y = 0; y < 8; y++) {
+                if(tileContent[y*16 + x] === " ") continue;
+                edits.push([ty, tx, y, x, Date.now(), char, 0, 0]);
+            };
         };
+        
         socket.send(JSON.stringify({
             kind: "write",
             edits: edits
         }));
     };
-    if(state.userModel.is_member) window.wipeTile = function(tx, ty, char=" ") {
+    if(state.userModel.is_member) wipeTile = function(tx, ty, char=" ") {
         char = char[0];
         socket.send(JSON.stringify({
             kind: "write",
@@ -47,14 +44,20 @@ function clearTileRange(minX, minY, maxX, maxY) {
     let clearingList = [];
 
 
+    let clearingInterval = (slowMode&&state.worldModel.name==="")?777:7;
+    if(state.userModel.is_member) clearingInterval = 1;
+
     for(let i = minY; i <= maxY; i++) {
         for(let x = minX; x <= maxX; x++) {
+            let tileCoord = i+","+x;
+            if(!tiles[tileCoord] || tiles[tileCoord].content.join("") === " ".repeat(128)) continue;
             clearingList.push([x, i]);
         };
     };
+
     for(var i = 0; i < clearingList.length; i++) {
         let tile = clearingList[i];
-        setTimeout(()=>{wipeTile(...tile)}, i*(slowMode?777:7));
+        setTimeout(()=>{wipeTile(...tile)}, i*((slowMode&&state.worldModel.name==="")?777:7));
     };
     clearingList = [];
 };
