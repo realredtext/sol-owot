@@ -1,4 +1,4 @@
-window.wipeTile = function(tx, ty, char=" ") {
+let wipeTile = function(tx, ty, char=" ") {
         let tileCoord = ty+","+tx;
         if(!tiles[tileCoord]) return;
         let tileContent = tiles[tileCoord].content;
@@ -15,7 +15,7 @@ window.wipeTile = function(tx, ty, char=" ") {
             edits: edits
         }));
     };
-if(state.userModel.is_member) window.wipeTile = function(tx, ty, char=" ") {
+if(state.userModel.is_member) wipeTile = function(tx, ty, char=" ") {
     char = char[0];
     socket.send(JSON.stringify({
         kind: "write",
