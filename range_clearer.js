@@ -13,14 +13,15 @@ function clearTileRange(minX, minY, maxX, maxY) {
         return list;
     };
 
-    let wipeTile = function(tx, ty, char=" ") {
+    window.wipeTile = function(tx, ty, char=" ") {
         let tileCoord = ty+","+tx;
         if(!tiles[tileCoord]) return;
         let tileContent = tiles[tileCoord].content;
+        let links = tiles[tileCoord].properties.cell_props || {};
         let edits = [];
         for(var x = 0; x < 16; x++) {
             for(var y = 0; y < 8; y++) {
-                if(tileContent[y*16 + x] === " ") continue;
+                if(tileContent[y*16 + x] === " " && !(links[y+""])) continue;
                 edits.push([ty, tx, y, x, Date.now(), char, 0, 0]);
             };
         };
@@ -30,7 +31,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
             edits: edits
         }));
     };
-    if(state.userModel.is_member) wipeTile = function(tx, ty, char=" ") {
+    if(state.userModel.is_member) window.wipeTile = function(tx, ty, char=" ") {
         char = char[0];
         socket.send(JSON.stringify({
             kind: "write",
@@ -43,8 +44,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
 
     let clearingList = [];
 
-
-    let clearingInterval = (slowMode&&state.worldModel.name==="")?777:7;
+    let clearingInterval = (slowMode&&state.worldModel.name==="")?270:7;
     if(state.userModel.is_member) clearingInterval = 1;
 
     for(let i = minY; i <= maxY; i++) {
@@ -55,11 +55,15 @@ function clearTileRange(minX, minY, maxX, maxY) {
         };
     };
 
+    let length = clearingList.length;
+    let finishingTime = Date.now()+(length * clearingInterval);
+
     for(var i = 0; i < clearingList.length; i++) {
         let tile = clearingList[i];
-        setTimeout(()=>{wipeTile(...tile)}, i*((slowMode&&state.worldModel.name==="")?777:7));
+        setTimeout(()=>{wipeTile(...tile)}, i*clearingInterval);
     };
     clearingList = [];
+    clearerChatResponse(`Started clearing<br>Clearing ${length} tiles<br>Estimated to end at: ${convertToDate(finishingTime)}`);
 };
 
 var sel = new RegionSelection();
