@@ -9,4 +9,3 @@ let writeString = (string, MoveCursor) => {
     if (MoveCursor == false) { moveCursor("left"); }
     }
 }
-//not by me, no clue who made it
