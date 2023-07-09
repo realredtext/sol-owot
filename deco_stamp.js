@@ -1,4 +1,3 @@
-//do NOT use on main page, super shit idea
 for(const i in tiles) {
     const [ty, tx] = i.split(",").map(num => Number(num));
 
