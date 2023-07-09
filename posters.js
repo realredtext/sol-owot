@@ -1,4 +1,4 @@
-function spam(str, len, wid) {
+function rect(str, len, wid) {
     var s = str.repeat(len);
     s += "\n";
     s = s.repeat(wid);
