@@ -1,6 +1,3 @@
-everyone put these fun tools all
-over owot, it would be really funny
-if they were everywhere and usable
-by everyone
+this repository doesnt close until the original "lime is typing" sticker returns
 
-w.loadScript("https://cdn.jsdelivr.net/gh/realredtext/fun-tools-owot@main/scriptnamehere.js") to load quickly
+w.loadScript("https://cdn.jsdelivr.net/gh/realredtext/sol-owot@main/scriptnamehere.js") to load quickly
