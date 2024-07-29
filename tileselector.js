@@ -44,7 +44,7 @@ function shouldClearChar(char, color, link, protection, mode) {
     };
 
     if(mode.blocksonly) {
-        return char === "█"
+        return char === "█";
     }
 
     return true;
@@ -136,7 +136,7 @@ function clearTileRange(minX, minY, maxX, maxY) {
 			clearingList.push([x, i]);
 			let tileClearTime = calculateClearTime(writeLimit, state.worldModel.char_rate[1], replaceAllIn(tile.content.join(""), blankChars));
 			intervalList.push(tileClearTime + intervalList[intervalList.length - 1]);
-            totalChars += tile.content.length;
+            totalChars += replaceAllIn(tile.content.join(""), blankChars).length;
 		};
 	};
 
@@ -149,15 +149,15 @@ function clearTileRange(minX, minY, maxX, maxY) {
 		}, intervalList[i]);
 	}
 
-	clearerChatResponse(`Clearing ${clearingList.length - 1} tiles, ${totalChars} chars, expected time: ${totalTime/1000} seconds`);
+	ClearerManager.core.send(`Clearing ${clearingList.length - 1} tiles, ${totalChars} chars, expected time: ${totalTime/1000} seconds`);
 };
 
-var sel = new RegionSelection();
-sel.charColor = "#ff0000";
-sel.color = "rgba(123, 123, 123, 0.1)";
-sel.tiled = true;
-sel.init();
-sel.onselection(function(coordA, coordB, regWidth, regHeight) {
+var clearSel = new RegionSelection();
+clearSel.charColor = "#ff0000";
+clearSel.color = "rgba(123, 123, 123, 0.1)";
+clearSel.tiled = true;
+clearSel.init();
+clearSel.onselection(function(coordA, coordB, regWidth, regHeight) {
 	var minTileX = coordA[0];
 	var minTileY = coordA[1];
 	var maxTileX = coordB[0];
@@ -165,41 +165,32 @@ sel.onselection(function(coordA, coordB, regWidth, regHeight) {
 	clearTileRange(minTileX, minTileY, maxTileX, maxTileY);
 });
 
-function clearerChatResponse(msg) { //TODO: integrate Managers.js
-	addChat(null, 0, "user", "[ Clearer ]", msg, "Clearer", ...[1,0,0], "#EE0000", getDate());
-};
-var clearrange_subcommands = {
-	help: () => {
-		clearerChatResponse("<ul><li><b>Commands</b></li><li>/clear spawn, for inside main spawn</li><li>/clear decolor, to eliminate color</li><li>/clear blocksonly, only removes █s</li></ul>");
-	},
-	decolor: () => {
-		decolorMode = !decolorMode;
-		clearerChatResponse(`Set decolor mode to ${decolorMode}`);
-	},
-	blocksonly: () => {
-		blocksOnly = !blocksOnly;
-		clearerChatResponse(`Set blocks only mode to ${blocksOnly}`);
-	},
-	writelimit: (x) => {
-		if(x === "r") x = state.worldModel.char_rate[0];
-		if(Number.isNaN(x*1)) return clearerChatResponse(`Invalid input`);
-		x *= 1;
-		writeLimit = x;
-		clearerChatResponse(`Set write limit to ${x} chars/second`)
-	}
-};
-client_commands.clear = ([subcommand, param]) => {
-	if(!subcommand) {
-		sel.startSelection();
-	} else {
-		if(subcommand in clearrange_subcommands) {
-			clearrange_subcommands[subcommand](param);
-		} else {
-			clearerChatResponse("Invalid subcommand");
-		};
-	};
-}
+let { ManagerCommandWrapper } = use("realredtext/scripts-owot/managers.js");
+
+let ClearerManager = new ManagerCommandWrapper("Clearer", "#EE0000", {
+    decolor: () => {
+        decolorMode = !decolorMode;
+        return `Set decolor mode to ${decolorMode}`;
+    },
+
+    blocksonly: () => {
+        blocksOnly = !blocksOnly;
+        return `Set blocks only mode to ${blocksOnly}`;
+    },
+
+    writelimit: (x) => {
+        if(x === "r") x = state.worldModel.char_rate[0];
+        if(Number.isNaN(x*1)) return `Invalid input`;
+        x *= 1;
+        writeLimit = x;
+        return `Set write limit to ${x} chars/second`;
+    },
+
+    default: () => {
+        clearSel.startSelection();
+    }
+}, "clearer")
 
 menu.addOption("Clear Range", () => {
-    sel.startSelection()
+    clearSel.startSelection()
 });
