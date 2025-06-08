@@ -343,7 +343,7 @@ function modeOfProtections(data) {
 	let mostCommonProtection = arrayMode(protections);
 	return mostCommonProtection;
 };
-
+/*BROKEN*/
 function everyNth(array, n, offset=0) {
 	return array.filter((value, index) => !((index+offset)%n));
 }
@@ -358,16 +358,21 @@ function multiAverage(...codes) {
 	for(var i = 0; i < 3; i++) {
 		let valuesToAverage = everyNth(codes.flat(), 3, i);
 		let average = valuesToAverage.map(code => code / 255)
-		.map(code => code**2)
-		.reduce((a,b) => a+b)/valuesToAverage.length;
+		.map(code => code**2);
+        console.log(average);
+        let q = 0;
+        for(var i = 0; i < average.length; i++) {
+            q += average[i];
+        }
+		
 
-		let stringAverage = Math.floor(255*average**0.5);
+		let stringAverage = Math.floor(255*q**0.5);
 		averageCode.push(stringAverage.toString(16).padStart(2,0));
 	};
 
 	return "#"+averageCode.join("");
 }
-
+/*BROKEN*/
 function hexcode_to_int(hex) {
     return parseInt(hex.replace("#", ""), 16)
 }
