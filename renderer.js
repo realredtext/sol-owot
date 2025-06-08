@@ -255,7 +255,10 @@ function handleReturnedTiles(tilesBack) {
 
 		let hasFilledCellProps = "cell_props" in tilesBack[i].properties && JSON.stringify(tilesBack[i].properties?.cell_props) !== "{}";
 
-		handlePixel(tilesBack[i].content, tilesBack[i].properties.color || emptyColor, {...eph.protData}, hasLinks(tilesBack[i]), tx%50, ty%50, eph.imageData, setting);
+        let usedColors = tilesBack[i].properties.color ?? emptyColor;
+        if(!usedColors.length) usedColors = emptyColor;
+
+		handlePixel(tilesBack[i].content, usedColors, {...eph.protData}, hasLinks(tilesBack[i]), tx%50, ty%50, eph.imageData, setting);
 	};
 	ctx.putImageData(eph.imageData, ...toCanvasCoord(...eph.topCornerTC));
     resetEphemeral("imageData", []);
@@ -343,7 +346,7 @@ function modeOfProtections(data) {
 	let mostCommonProtection = arrayMode(protections);
 	return mostCommonProtection;
 };
-/*BROKEN*/
+
 function everyNth(array, n, offset=0) {
 	return array.filter((value, index) => !((index+offset)%n));
 }
@@ -357,22 +360,18 @@ function multiAverage(...codes) {
 	let averageCode = [];
 	for(var i = 0; i < 3; i++) {
 		let valuesToAverage = everyNth(codes.flat(), 3, i);
+        if(!valuesToAverage.length) valuesToAverage = [0,0];
 		let average = valuesToAverage.map(code => code / 255)
-		.map(code => code**2);
-        console.log(average);
-        let q = 0;
-        for(var i = 0; i < average.length; i++) {
-            q += average[i];
-        }
-		
+		.map(code => code**2)
+		.reduce((a,b) => a+b)/valuesToAverage.length;
 
-		let stringAverage = Math.floor(255*q**0.5);
+		let stringAverage = Math.floor(255*average**0.5);
 		averageCode.push(stringAverage.toString(16).padStart(2,0));
 	};
 
 	return "#"+averageCode.join("");
 }
-/*BROKEN*/
+
 function hexcode_to_int(hex) {
     return parseInt(hex.replace("#", ""), 16)
 }
