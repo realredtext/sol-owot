@@ -360,7 +360,6 @@ function multiAverage(...codes) {
 	let averageCode = [];
 	for(var i = 0; i < 3; i++) {
 		let valuesToAverage = everyNth(codes.flat(), 3, i);
-        if(!valuesToAverage.length) valuesToAverage = [0,0];
 		let average = valuesToAverage.map(code => code / 255)
 		.map(code => code**2)
 		.reduce((a,b) => a+b)/valuesToAverage.length;
@@ -385,6 +384,7 @@ function handlePixel(tileContent, tileColors, protData, links, x, y, imageData, 
                 tileColors = tileColors.filter((color, index) => !blankChars.includes(tileContent[index]));
 				let colorMode = arrayMode(tileColors ?? emptyColor);
 				if(!colorMode) {
+                    if(!tileColors.length) tileColors = emptyColor;
 					colorMode = hexcode_to_int(multiAverage(...(tileColors.map(color => int_to_hexcode(color ?? 0)))).replace("#", ""));
 				}
 				setPixel(imageData, x, y, ...int_to_rgb(colorMode), 255);
