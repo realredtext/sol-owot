@@ -86,7 +86,8 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	let abso = {
 		x: coorda[2] + coorda[0]*tileC,
 		y: coorda[3] + coorda[1]*tileR
-	}
+	};
+	let clearCount = 0;
 	for(var i = 0; i < width*height; i++) {
 		eph.relativeX = i % width;
 		eph.relativeY = Math.floor(i / width);
@@ -127,7 +128,10 @@ cSel.onselection(function(coorda, coordb, width, height) {
 
 		if(!shouldClearChar(...Object.values(eph.charData))) continue;
 		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, 0, charToWrite, 0, colorToWrite, -1]);
+		clearCount++;
 	};
+
+	clearManager.core.send(`Clearing ${clearCount} chars, estimated time: ${clearCount/state.worldModel.char_rate[0]} second(s)`);
 
 	setEph("relativeX", 0);
 	setEph("relativeY", 0);
