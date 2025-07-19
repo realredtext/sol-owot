@@ -140,7 +140,6 @@ let rendererManager = new ManagerCommandWrapper("Image Renderer", "#005500", {
 		ctx.fillRect(0, 0, radius*2, radius*2);
 
 		update();
-		rendererManager.core.send(`Estimated fetch time: ${(2*radiusParam ** 2)/20} seconds`);
 		return `Fetching ${(2*radius)**2} tiles, ${radius/2} by ${radius/2} coords`;
 	},
 	setting: (nSetting) => {
@@ -224,11 +223,11 @@ function update() {
         const msg = eph.fetchBlocks[i]; //TODO: make ephemeral without breaking everything
         setTimeout(function() {
             fetchSocket.send(msg);
-        }, i+1 * 50);
+        }, i+1 * 70);
     }
 	setTimeout(()=>{
 		rendererManager.core.send("All fetches sent, now waiting for response")
-	}, eph.fetchBlocks.length * 50);
+	}, eph.fetchBlocks.length * 70);
     resetEphemeral("fetchBlocks", []);
 };
 
