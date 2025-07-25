@@ -1,4 +1,4 @@
-let limitFactor = 3;
+let limitFactor = 5;
 let clearWrites = [];
 let settings = {
 	decolor: false,
@@ -38,7 +38,7 @@ function deRepetize(array) {
 	for(var i of array) {
 		if(!uniqueValues.includes(i)) uniqueValues.push(i);
 	};
-	
+
 	return uniqueValues;
 };
 
@@ -68,12 +68,12 @@ const setEph = function(k, v) {
 	eph[k] = v;
 }
 
-function shouldClearChar(char, hasLink, hasBG, protection, hasColor) {
+function shouldClearChar(char, hasLink, hasBG, protection, hasColor, decolor, linksonly) {
 	if(protection > userPerm) return false;
 	if(not.length) return !not.includes(char);
 	if(only.length) return only.includes(char);
-	if(settings.linksonly) return hasLink;
-	if(settings.decolor) return !blankChars.includes(char) && (hasBG || hasColor);
+	if(linksonly) return hasLink;
+	if(decolor) return hasBG || hasColor;
 
 	return !blankChars.includes(char) || (hasLink || hasBG);
 };
@@ -107,27 +107,35 @@ cSel.onselection(function(coorda, coordb, width, height) {
 		if(!tileCache[eph.name]) {
 			tileCache[eph.name] = tiles[eph.name];
 		};
-		
+
 		eph.focusProps = eph.focusTile.properties;
 		let index = eph.fcy*tileC + eph.fcx;
 		if(!eph.focusTile) continue;
-		
+
 		eph.charData = {
 			char: eph.focusTile.content[index],
 			link: hasLink(eph.focusProps.cell_props ?? {}, eph.fcx, eph.fcy),
 			bgcolor: (eph.focusProps.bgcolor ?? blankProps.bgcolor)[index] !== -1,
 			protection: (eph.focusProps.char ?? blankProps.protection(eph.focusTile.properties.writability))[index],
-			hasColor: !!(eph.focusProps.color ?? blankProps.color)[index]
+			hasColor: !!(eph.focusProps.color ?? blankProps.color)[index],
+            decolor: settings.decolor,
+            linksonly: settings.linksonly
 		};
 
 		let charToWrite = " ";
-		if(settings.decolor || settings.linksonly) charToWrite = eph.focusTile.content[index];
+		if(settings.decolor || settings.linksonly) {
+            console.log("WORK YOU CUNT");
+            charToWrite = eph.focusTile.content[index];
+        }
 
 		let colorToWrite = 0;
 		if(settings.linksonly) colorToWrite = (eph.focusTile.properties.color ?? blankProps.color)[index];
 
+        let bgColorToWrite = -1;
+        if(settings.linksonly) bgColorToWrite = (eph.focusTile.properties.bgcolor ?? blankProps.bgcolor)[index];
+
 		if(!shouldClearChar(...Object.values(eph.charData))) continue;
-		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, 0, charToWrite, 0, colorToWrite, -1]);
+		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, 0, charToWrite, Math.floor(Math.random()*1e6), colorToWrite, bgColorToWrite]);
 		clearCount++;
 	};
 
@@ -147,7 +155,7 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	setEph("focusProps", {});
 	setEph("charData", {});
 	setEph("name", "");
-	
+
 	tileCache = {};
 });
 
@@ -173,7 +181,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 
 		if(setting !== "linksonly") settings.linksonly = false;
 		if(setting === "linksonly" && !settings.linksonly) settings.decolor = false;
-		
+
 		settings[setting] = !settings[setting];
 		return `Set ${setting} to ${settings[setting]}`;
 	},
@@ -197,13 +205,17 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 		not = [...deRepetize(goodChars.split("")), ...blankChars];
 
 		return `Set avoided chars to ${not.join("")}`;
-	}
+	},
+    "flush": () => {
+        clearWrites = [];
+        return `Flushed all current queued writes`;
+    }
 }, "clearer")
 
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) return;
 	network.write(clearWrites.splice(0,512), {
-		preserve_links: false
+		preserve_links: !settings.linksonly
 	});
 }, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
 
