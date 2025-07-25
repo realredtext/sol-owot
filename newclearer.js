@@ -74,8 +74,9 @@ function shouldClearChar(char, hasLink, hasBG, protection, hasColor, decolor, li
 	if(only.length) return only.includes(char);
 	if(linksonly) return hasLink;
 	if(decolor) return hasBG || hasColor;
+    if(blankChars.includes(char)) return hasLink || hasBG;
 
-	return !blankChars.includes(char) || (hasLink || hasBG);
+	return false;
 };
 
 let cSel = new RegionSelection();
@@ -124,7 +125,6 @@ cSel.onselection(function(coorda, coordb, width, height) {
 
 		let charToWrite = " ";
 		if(settings.decolor || settings.linksonly) {
-            console.log("WORK YOU CUNT");
             charToWrite = eph.focusTile.content[index];
         }
 
@@ -218,7 +218,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) return;
 	network.write(clearWrites.splice(0,512), {
-		preserve_links: false
+		preserve_links: settings.decolor
 	});
 }, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
 
