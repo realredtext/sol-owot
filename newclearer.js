@@ -1,3 +1,14 @@
+// ==UserScript==
+// @name         Clearer
+// @namespace    http://tampermonkey.net/
+// @version      2025-07-22
+// @description  try to take over the world!
+// @author       You
+// @match        *://ourworldoftext.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=ourworldoftext.com
+// @grant        none
+// ==/UserScript==
+
 let limitFactor = 5;
 let clearWrites = [];
 let settings = {
@@ -215,10 +226,22 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) return;
 	network.write(clearWrites.splice(0,512), {
-		preserve_links: !settings.linksonly
+		preserve_links: false
 	});
 }, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
 
 menu.addOption("Clear area", () => {
 	cSel.startSelection();
 });
+
+keyConfig.clear = "ALT+Z";
+
+function keydown_clear(e) {
+    if(!checkKeyPress(e, keyConfig.clear) || regionSelectionsActive()) return;
+    if(Modal.isOpen) return;
+    if(!worldFocused) return;
+    e.preventDefault();
+    cSel.startSelection();
+}
+
+document.body.addEventListener("keydown", keydown_clear);
