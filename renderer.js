@@ -1,5 +1,5 @@
 let renderCanvas 			= document.createElement("canvas");
-let radiusParam 			= 5;
+let radiusParam 			= 3;
 let radius 					= radiusParam*50;
 let setting 				= "colormode";
 let validSettings 			= ["colormode", "density", "protections", "links", "searchall", "searchany"];
@@ -14,6 +14,29 @@ let tileOffsets = {
 	y: Math.floor(-positionY/tileH) * doOffset
 };
 
+let dispMap = {
+	"true": "",
+	"false": "none"
+};
+
+function filtArr(arr, filterFunction) { //function has params val and ind
+    let pass = [];
+    for(var i = 0; i < arr.length; i++) {
+        if(filterFunction(arr[i], i)) pass.push(arr[i]);
+    };
+
+    arr = [];
+    return pass;
+};
+
+function mapArr(arr, mapFunc) {
+	for(var i = 0; i < arr.length; i++) {
+		arr[i] = mapFunc(arr[i]);
+	};
+	
+	return arr;
+}
+
 let ctx = renderCanvas.getContext('2d');
 renderCanvas.style.border = "1px solid #000000";
 renderCanvas.height = (2*radius)+"";
@@ -25,6 +48,7 @@ ctx.fillRect(0, 0, radius*2, radius*2);
 renderCanvas.style.position = "absolute";
 renderCanvas.style.left = "20px";
 renderCanvas.style.top = "20px";
+renderCanvas.style["image-rendering"] = "pixelated";
 document.getElementsByTagName("body")[0].appendChild(renderCanvas);
 
 function canvasCoordsToTileCoords(cx, cy) {
@@ -88,7 +112,7 @@ function includesAllOf(queries, sample) {
 	};
 
 	return true;
-}
+};
 
 function deRepetize(array) {
 	let uniqueValues = [];
@@ -98,6 +122,21 @@ function deRepetize(array) {
 
 	return uniqueValues;
 };
+
+function hasLinks(tileProps) { //TODO: give better time complexity than n^2
+	if(! "cell_props" in tileProps) return false;
+	if(JSON.stringify(tileProps.cell_props) === "{}") return false;
+	
+	for(var i in tileProps.cell_props) { //cell_props can have empty row properties
+		if(JSON.stringify(tileProps.cell_props[i]) === "{}") return false;
+		for(var j in tileProps.cell_props[i]) {
+			if(JSON.stringify(tileProps.cell_props[i][j]) === "{}") return false;
+		};
+	};
+	
+	return true;
+	
+}
 
 const blankChars = [" ", "\u2800", "\u061c"];
 
@@ -122,13 +161,9 @@ let rendererManager = new ManagerCommandWrapper("Image Renderer", "#005500", {
 	},
 
 	display: () => {
-		let map = {
-			"true": "",
-			"false": "none"
-		};
-		doDisplay = !doDisplay;
-		renderCanvas.style.display = map[doDisplay+""];
-		return `Switched canvas display setting`
+	doDisplay = !doDisplay;
+	renderCanvas.style.display = dispMap[doDisplay+""];
+	return `Switched canvas display setting`;
 	},
 
 	render: () => {
@@ -178,12 +213,17 @@ let eph = {
 	secondBlock: {},
     arrayValues: [],
     fetchResponse: {},
-	protData: {}
+	protData: {},
+    char: [],
+    protections: [],
+    tx: 0,
+    ty: 0,
+    colorMode: 0,
+    usedColors: []
 }
 //===DO NOT EDIT THIS OBJECT===
 const resetEphemeral = function(key, value) {
 	if(!(key in eph)) return;
-	if(! ["{}", "[]"].includes(JSON.stringify(value))) return;
 
 	delete eph[key];
 	eph[key] = value;
@@ -219,29 +259,26 @@ function update() {
 		};
 	};
 
-    for(var i in eph.fetchBlocks) {
-        const msg = eph.fetchBlocks[i]; //TODO: make ephemeral without breaking everything
+    for(var i = 0; i < eph.fetchBlocks.length; i++) {
+        let _copy = eph.fetchBlocks[i];
         setTimeout(function() {
-            fetchSocket.send(msg);
-        }, i+1 * 70);
+            fetchSocket.send(_copy);
+            _copy = ""; //basically ephemeral
+        }, i+1 * 100);
     }
 	setTimeout(()=>{
-		rendererManager.core.send("All fetches sent, now waiting for response")
-	}, eph.fetchBlocks.length * 70);
-    resetEphemeral("fetchBlocks", []);
+		rendererManager.core.send("All fetches sent, now waiting for response");
+        resetEphemeral("fetchBlocks", []);
+	}, eph.fetchBlocks.length * 100);
 };
 
-function hasLinks(tile) {
-	return  "cell_props" in tile.properties && JSON.stringify(tile.properties?.cell_props) !== "{}";
-}
-
 function handleReturnedTiles(tilesBack) {
-	eph.topCornerTC = Object.keys(tilesBack)[0].split(",").map(Number).toReversed();
+	eph.topCornerTC = mapArr(Object.keys(tilesBack)[0].split(","), Number).toReversed();
 	eph.topCornerTC = [eph.topCornerTC[0] - tileOffsets.x, eph.topCornerTC[1] - tileOffsets.y];
 	eph.imageData = ctx.createImageData(50, 50);
-	for(var i in tilesBack) {
-		let [ty, tx] = i.split(",").map(Number);
-		[tx, ty] = toCanvasCoord(tx - tileOffsets.x, ty - tileOffsets.y);
+	for(var i in tilesBack) { //TODO: for in loops on objects may be unoptimalT
+		[eph.ty, eph.tx] = mapArr(i.split(","), Number);
+		[eph.tx, eph.ty] = toCanvasCoord(eph.tx - tileOffsets.x, eph.ty - tileOffsets.y);
 		if(!tilesBack[i]) tilesBack[i] = blankTile();
 		if(tilesBack[i].content instanceof Array) {
 			tilesBack[i].content = tilesBack[i].content.join("");
@@ -251,18 +288,22 @@ function handleReturnedTiles(tilesBack) {
 			writability: tilesBack[i].properties.writability ?? state.worldModel.writability,
 			char: tilesBack[i].properties.char ?? new Array(128).fill(tilesBack[i].properties.writability ?? state.worldModel.writability)
 		};
+		
+		let hasFilledCellProps = hasLinks(tilesBack[i].properties);
 
-		let hasFilledCellProps = "cell_props" in tilesBack[i].properties && JSON.stringify(tilesBack[i].properties?.cell_props) !== "{}";
+        eph.usedColors = tilesBack[i].properties.color ?? emptyColor;
+        if(!eph.usedColors.length) eph.usedColors = emptyColor;
 
-        let usedColors = tilesBack[i].properties.color ?? emptyColor;
-        if(!usedColors.length) usedColors = emptyColor;
-
-		handlePixel(tilesBack[i].content, usedColors, {...eph.protData}, hasLinks(tilesBack[i]), tx%50, ty%50, eph.imageData, setting);
+		handlePixel(tilesBack[i].content, eph.usedColors, {...eph.protData}, hasFilledCellProps, eph.tx%50, eph.ty%50, eph.imageData, setting);
 	};
 	ctx.putImageData(eph.imageData, ...toCanvasCoord(...eph.topCornerTC));
     resetEphemeral("imageData", []);
     resetEphemeral("topCornerTC", []);
 	resetEphemeral("protData", {});
+    tilesBack = {};
+    resetEphemeral("usedColors", []);
+    resetEphemeral("tx", 0);
+    resetEphemeral("ty", 0);
 };
 
 let fetchSocket = new WebSocket(ws_path+"?hide=1");
@@ -335,33 +376,40 @@ const protectionColors = {
 
 function modeOfProtections(data) {
 	let writability = data.writability ?? state.worldModel.writability;
-	let char = data.char ?? new Array(128).fill(writability);
+	eph.char = data.char ?? new Array(128).fill(writability);
 
-	let protections = new Array(128).fill(writability);
-	for(var i = 0; i < char.length; i++) {
-		protections[i] = char[i];
+	eph.protections = new Array(128).fill(writability);
+	for(var i = 0; i < eph.char.length; i++) {
+		eph.protections[i] = eph.char[i];
 	};
 
-	let mostCommonProtection = arrayMode(protections);
-	return mostCommonProtection;
+	let result = arrayMode(eph.protections);
+    resetEphemeral("char", []);
+    resetEphemeral("protections", []);
+	return arrayMode(result);
 };
 
 function everyNth(array, n, offset=0) {
-	return array.filter((value, index) => !((index+offset)%n));
+	return filtArr(array, function(val, ind) {
+		return !((ind+offset)%n);
+	})
 }
 
 function multiAverage(...codes) {
-	codes = codes.map(code => code.replace(/\#/g, ""))
-		.map(code => code.match(/.{1,2}/g))
-		.map(code => code.map(scode => parseInt(scode, 16)))
-		.map(code => [code[0], code[2], code[1]]); //for some reason, everyNth is broken
-
+    for(var i = 0; i < codes.length; i++) {
+        codes[i] = codes[i].replace(/\#/g, "");
+        codes[i] = codes[i].match(/.{1,2}/g);
+        codes[i] = [codes[i][0], codes[i][2], codes[i][1]];
+    };
+	
 	let averageCode = [];
 	for(var i = 0; i < 3; i++) {
 		let valuesToAverage = everyNth(codes.flat(), 3, i);
-		let average = valuesToAverage.map(code => code / 255)
-		.map(code => code**2)
-		.reduce((a,b) => a+b)/valuesToAverage.length;
+		let average = mapArr(mapArr(valuesToAverage, function(code) {
+			return code/255;
+		}), function(code) {
+			return code**2;
+		}).reduce((a,b) => a+b)/valuesToAverage.length;
 
 		let stringAverage = Math.floor(255*average**0.5);
 		averageCode.push(stringAverage.toString(16).padStart(2,0));
@@ -374,20 +422,24 @@ function hexcode_to_int(hex) {
     return parseInt(hex.replace("#", ""), 16)
 }
 
-function handlePixel(tileContent, tileColors, protData, links, x, y, imageData, setting) { //TODO: this is called possibly millions of times, this cannot have ANY memory issues, must ephemeralize everything
+function handlePixel(tileContent, tileColors, protData, links, x, y, imageData, setting) {
+    //TODO: this is called possibly millions of times, this cannot have ANY memory issues, must ephemeralize everything && optimize for CPU usage
 	switch(setting) {
 		case "colormode":
 			if(!replaceAllIn(tileContent, blankChars).length) {
 				setPixel(imageData, x, y, 255, 255, 255, 255);
 			} else {
-                tileColors = tileColors.filter((color, index) => !blankChars.includes(tileContent[index]));
-				let colorMode = arrayMode(tileColors ?? emptyColor);
-				if(!colorMode) {
+                tileColors = filtArr(tileColors, function(val, ind) {
+					return !blankChars.includes(tileContent[ind]);
+				});
+				eph.colorMode = arrayMode(tileColors ?? emptyColor);
+				if(!eph.colorMode) {
                     if(!tileColors.length) tileColors = emptyColor;
-					colorMode = hexcode_to_int(multiAverage(...(tileColors.map(color => int_to_hexcode(color ?? 0)))).replace("#", ""));
+					eph.colorMode = hexcode_to_int(multiAverage(...(tileColors.map(color => int_to_hexcode(color ?? 0)))).replace("#", ""));
 				}
-				setPixel(imageData, x, y, ...int_to_rgb(colorMode), 255);
+				setPixel(imageData, x, y, ...int_to_rgb(eph.colorMode), 255);
 			}
+            resetEphemeral("colorMode", 0);
 			return;
 		case "density":
 			let usedContent = replaceAllIn(tileContent, blankChars).length;
@@ -396,7 +448,6 @@ function handlePixel(tileContent, tileColors, protData, links, x, y, imageData, 
 			return;
 		case "protections":
 			let mostCommonProtection = modeOfProtections(protData); //TODO: the center console is not shown as member protected despite having 71/128 non-public chars per tile
-
 			setPixel(imageData, x, y, ...protectionColors[mostCommonProtection], 255);
 			return;
 		case "links":
@@ -409,6 +460,9 @@ function handlePixel(tileContent, tileColors, protData, links, x, y, imageData, 
 		case "searchall":
 			let hasAllChars = includesAllOf(searchChars, tileContent);
 			setPixel(imageData, x, y, 255, hasAllChars?0:255, hasAllChars?0:255, 255);
+			tileContent = [];
+			tileColors = [];
+			protData = [];
 			return;
 		default:
 			return;
