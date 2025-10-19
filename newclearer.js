@@ -28,6 +28,11 @@ function timeToSendEdits(charsPer, interval) {
     return fixed.interval * (512 / fixed.chars);
 };
 
+function editsToSend(charsPer) {
+    if(charsPer >= 512) return 512;
+    return charsPer;
+}
+
 function fixedModulo(x, y) {
     if(x > -1) return x % y;
 	if(Math.floor(+x / y) === +x / y) return 0; //99.999% analytical grade jank
@@ -222,7 +227,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 	}
 }, "clearer");
 
-client_commands.cpa = function() {
+client_commands.cpa = () => {
 	isPaused = !isPaused;
 	clearManager.core.send(`Set isPaused to ${isPaused}`);
 }
@@ -230,7 +235,7 @@ client_commands.cpa = function() {
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) return;
 	if(isPaused) return;
-	network.write(clearWrites.splice(0,512), {
+	network.write(clearWrites.splice(0, editsToSend(state.worldModel.char_rate[0])), {
 		preserve_links: settings.decolor
 	});
 }, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
@@ -241,6 +246,7 @@ menu.addOption("Clear area", () => {
 
 keyConfig.clear = "ALT+Z";
 keyConfig.flush = "ALT+X";
+keyConfig.pausetoggle = "ALT+V";
 
 function keydown_clear(e) {
     if(!checkKeyPress(e, keyConfig.clear) || regionSelectionsActive()) return;
@@ -258,5 +264,14 @@ function keydown_flush(e) {
     clearManager.core.send("Flushed all queued writes");
 };
 
+function keydown_pausetoggle(e) {
+    if(!checkKeyPress(e, keyConfig.pausetoggle) || regionSelectionsActive()) return;
+    if(Modal.isOpen) return;
+    e.preventDefault();
+    clearManager.functions.pause();
+    clearManager.core.send(`Set isPaused to ${isPaused}`);
+};
+
+document.body.addEventListener("keydown", keydown_pausetoggle);
 document.body.addEventListener("keydown", keydown_clear);
 document.body.addEventListener("keydown", keydown_flush);
