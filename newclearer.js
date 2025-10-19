@@ -1,4 +1,5 @@
 let limitFactor = 5;
+let isPaused = false;
 let clearWrites = [];
 let settings = {
 	decolor: false,
@@ -59,6 +60,7 @@ let eph = {
 	focusTile: {},
 	focusProps: {},
 	charData: {},
+	abso: {},
 	name: ""
 };
 
@@ -70,21 +72,21 @@ const setEph = function(k, v) {
 
 function shouldClearChar(char, hasLink, hasBG, protection, hasColor, decolor, linksonly) {
 	if(protection > userPerm) return false;
+	if(blankChars.includes(char)) return hasLink || hasBG;
 	if(not.length) return !not.includes(char);
 	if(only.length) return only.includes(char);
 	if(linksonly) return hasLink;
 	if(decolor) return hasBG || hasColor;
-    if(blankChars.includes(char)) return hasLink || hasBG;
 
-	return false;
+	return true;
 };
 
 let cSel = new RegionSelection();
 cSel.charColor = "#ff0000";
-cSel.color = "rgba(127, 127, 127, 0.1)";
+cSel.color = "rgba(255, 0, 0, 0.1)";
 cSel.init();
 cSel.onselection(function(coorda, coordb, width, height) {
-	let abso = {
+	eph.abso = {
 		x: coorda[2] + coorda[0]*tileC,
 		y: coorda[3] + coorda[1]*tileR
 	};
@@ -92,8 +94,8 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	for(var i = 0; i < width*height; i++) {
 		eph.relativeX = i % width;
 		eph.relativeY = Math.floor(i / width);
-		eph.absoluteX = abso.x + eph.relativeX;
-		eph.absoluteY = abso.y + eph.relativeY;
+		eph.absoluteX = eph.abso.x + eph.relativeX;
+		eph.absoluteY = eph.abso.y + eph.relativeY;
 
 		eph.ftx = Math.floor(eph.absoluteX / tileC);
 		eph.fty = Math.floor(eph.absoluteY / tileR);
@@ -135,7 +137,7 @@ cSel.onselection(function(coorda, coordb, width, height) {
         if(settings.linksonly) bgColorToWrite = (eph.focusTile.properties.bgcolor ?? blankProps.bgcolor)[index];
 
 		if(!shouldClearChar(...Object.values(eph.charData))) continue;
-		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, 0, charToWrite, Math.floor(Math.random()*1e6), colorToWrite, bgColorToWrite]);
+		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite]);
 		clearCount++;
 	};
 
@@ -154,6 +156,7 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	setEph("focusTile", {});
 	setEph("focusProps", {});
 	setEph("charData", {});
+	setEph("abso", {});
 	setEph("name", "");
 
 	tileCache = {};
@@ -211,12 +214,22 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
         return `Flushed all queued writes`;
     },
     "writes": () => {
-        return `${clearWrites.length} writes queued`;
-    }
+        return `${clearWrites.length} writes queued, ${Math.round(100*clearWrites.length/state.worldModel.char_rate[0])/100} sec to clear (est)`;
+    },
+	"pause": () => {
+		isPaused = !isPaused;
+		return `Set isPaused to ${isPaused}`;
+	}
 }, "clearer");
+
+client_commands.cpa = function() {
+	isPaused = !isPaused;
+	clearManager.core.send(`Set isPaused to ${isPaused}`);
+}
 
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) return;
+	if(isPaused) return;
 	network.write(clearWrites.splice(0,512), {
 		preserve_links: settings.decolor
 	});
@@ -227,6 +240,7 @@ menu.addOption("Clear area", () => {
 });
 
 keyConfig.clear = "ALT+Z";
+keyConfig.flush = "ALT+X";
 
 function keydown_clear(e) {
     if(!checkKeyPress(e, keyConfig.clear) || regionSelectionsActive()) return;
@@ -234,6 +248,15 @@ function keydown_clear(e) {
     if(!worldFocused) return;
     e.preventDefault();
     cSel.startSelection();
-}
+};
+
+function keydown_flush(e) {
+    if(!checkKeyPress(e, keyConfig.flush) || regionSelectionsActive()) return;
+    if(Modal.isOpen) return;
+    e.preventDefault();
+    clearManager.functions.flush();
+    clearManager.core.send("Flushed all queued writes");
+};
 
 document.body.addEventListener("keydown", keydown_clear);
+document.body.addEventListener("keydown", keydown_flush);
