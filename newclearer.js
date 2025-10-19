@@ -183,6 +183,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 
 		limitFactor = num;
 		
+		clearInterval(sendWritesInterval);
 		sendWritesInterval = setInterval(() => {
 			if(!clearWrites.length) return;
 			if(isPaused) return;
