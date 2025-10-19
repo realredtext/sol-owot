@@ -182,6 +182,15 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 		if(num > 7) return `High limits will severely impact clearing speed`;
 
 		limitFactor = num;
+		
+		sendWritesInterval = setInterval(() => {
+			if(!clearWrites.length) return;
+			if(isPaused) return;
+			network.write(clearWrites.splice(0, editsToSend(state.worldModel.char_rate[0])), {
+				preserve_links: settings.decolor
+			});
+		}, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
+		
 		return `Set limit factor to ${num}`;
 	},
 	"set": (setting) => {
