@@ -1,13 +1,12 @@
-let limitFactor = 5;
-let isPaused = false;
-let clearWrites = [];
-let settings = {
-	decolor: false,
-	linksonly: false
-};
-let only = [];
-let not = [];
-let tileCache = {};
+let limitFactor 				= 2.2;
+let groupCounter 				= 0;
+let isPaused 					= false;
+let clearWrites 				= [];
+let settings 					= {decolor: false, linksonly: false};
+let only 						= [];
+let not 						= [];
+let tileCache 					= {};
+let groupList 					= {};
 
 const userPerm = state.userModel.is_owner?2:(state.userModel.is_member?1:0);
 const blankChars = [" ", "⠀", "؜"];
@@ -66,7 +65,9 @@ let eph = {
 	focusProps: {},
 	charData: {},
 	abso: {},
-	name: ""
+	name: "",
+	bumped: [],
+	unbumped: []
 };
 
 const setEph = function(k, v) {
@@ -142,11 +143,14 @@ cSel.onselection(function(coorda, coordb, width, height) {
         if(settings.linksonly) bgColorToWrite = (eph.focusTile.properties.bgcolor ?? blankProps.bgcolor)[index];
 
 		if(!shouldClearChar(...Object.values(eph.charData))) continue;
-		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite]);
+		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite, groupCounter]);
 		clearCount++;
 	};
 
-	clearManager.core.send(`Clearing ${clearCount} chars, est. time: ${Math.round(100*clearCount/state.worldModel.char_rate[0])/100} sec(s)`);
+	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${Math.round(100*clearCount/(state.worldModel.char_rate[0]*(1+limitFactor)))/100} sec(s)`);
+	
+	groupList[groupCounter+""] = clearCount;
+	groupCounter++;
 
 	setEph("relativeX", 0);
 	setEph("relativeY", 0);
@@ -226,6 +230,8 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 	},
     "flush": () => {
         clearWrites = [];
+		groupList = {};
+		groupCounter = 0;
         return `Flushed all queued writes`;
     },
     "writes": () => {
@@ -234,6 +240,59 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 	"pause": () => {
 		isPaused = !isPaused;
 		return `Set isPaused to ${isPaused}`;
+	},
+	"groups": () => {
+		let out = `Active write groups: `;
+		for(var i in groupList) {
+			out += `Group ${i}: ${groupList[i]} edits, `;
+		};
+		return out;
+	},
+	"bump": (group) => {
+		let val = Number(group);
+		if(Number.isNaN(val)) return `Invalid input`;
+		if(!Object.keys(groupList).includes(group)) return `No group ${group} in existence`;
+		for(var i = 0; i < clearWrites.length; i++) {
+			if(clearWrites[i][9] === val) {
+				eph.bumped.push(clearWrites[i]);
+				continue;
+			};
+			eph.unbumped.push(clearWrites[i]);
+		};
+		clearWrites = [...eph.bumped, ...eph.unbumped];
+		setEph("bumped", []);
+		setEph("unbumped", []);
+		return `Bumped group ${group} to priority status`
+	},
+	"sink": (group) => {
+		let val = Number(group);
+		if(Number.isNaN(val)) return `Invalid input`;
+		if(!Object.keys(groupList).includes(group)) return `No group ${group} in existence`;
+		for(var i = 0; i < clearWrites.length; i++) {
+			if(clearWrites[i][9] === val) {
+				eph.bumped.push(clearWrites[i]);
+				continue;
+			};
+			eph.unbumped.push(clearWrites[i]);
+		};
+		clearWrites = [...eph.unbumped, ...eph.bumped];
+		setEph("bumped", []);
+		setEph("unbumped", []);
+		return `Sank group ${group} to least priority`;
+	},
+	"delgroup": (group) => {
+		let val = Number(group);
+		if(Number.isNaN(val)) return `Invalid input`;
+		if(!Object.keys(groupList).includes(group)) return `No group ${group} in existence`;
+		for(var i = 0; i < clearWrites.length; i++) {
+			if(clearWrites[i][9] === val) {
+				continue;
+			};
+			eph.unbumped.push(clearWrites[i]);
+		};
+		clearWrites = [...eph.unbumped];
+		setEph("unbumped", []);
+		return `Deleted group ${group}'s edits`;
 	}
 }, "clearer");
 
@@ -243,7 +302,11 @@ client_commands.cpa = () => {
 }
 
 let sendWritesInterval = setInterval(() => {
-	if(!clearWrites.length) return;
+	if(!clearWrites.length) {
+		groupList = {};
+		groupCounter = 0;
+		return;
+	};
 	if(isPaused) return;
 	network.write(clearWrites.splice(0, editsToSend(state.worldModel.char_rate[0])), {
 		preserve_links: settings.decolor
