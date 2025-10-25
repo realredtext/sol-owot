@@ -146,8 +146,10 @@ cSel.onselection(function(coorda, coordb, width, height) {
 		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite, groupCounter]);
 		clearCount++;
 	};
+	
+	if(!clearCount) return;
 
-	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${Math.round(100*clearCount/(state.worldModel.char_rate[0]*(1+limitFactor)))/100} sec(s)`);
+	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${Math.round(100*clearCount/(state.worldModel.char_rate[0]*(1+limitFactor*0.1)))/100} sec(s)`);
 	
 	groupList[groupCounter+""] = clearCount;
 	groupCounter++;
@@ -303,6 +305,7 @@ client_commands.cpa = () => {
 
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) {
+		console.log(1);
 		groupList = {};
 		groupCounter = 0;
 		return;
