@@ -148,8 +148,10 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	};
 	
 	if(!clearCount) return;
+	
+	let estTime = Math.round(100 * (clearCount/state.worldModel.char_rate[0]) * (1+(limitFactor/10)))/100
 
-	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${Math.round(100*clearCount/(state.worldModel.char_rate[0]*(1+limitFactor*0.1)))/100} sec(s)`);
+	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${estTime} sec(s)`);
 	
 	groupList[groupCounter+""] = clearCount;
 	groupCounter++;
