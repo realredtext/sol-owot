@@ -1,14 +1,3 @@
-// ==UserScript==
-// @name         Clearer
-// @namespace    http://tampermonkey.net/
-// @version      2025-07-22
-// @description  try to take over the world!
-// @author       You
-// @match        *://ourworldoftext.com/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=ourworldoftext.com
-// @grant        none
-// ==/UserScript==
-
 let limitFactor 				= 2.5;
 let groupCounter 				= 0;
 let isPaused 					= false;
