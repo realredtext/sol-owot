@@ -1,4 +1,15 @@
-let limitFactor 				= 2.2;
+// ==UserScript==
+// @name         Clearer
+// @namespace    http://tampermonkey.net/
+// @version      2025-07-22
+// @description  try to take over the world!
+// @author       You
+// @match        *://ourworldoftext.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=ourworldoftext.com
+// @grant        none
+// ==/UserScript==
+
+let limitFactor 				= 2.5;
 let groupCounter 				= 0;
 let isPaused 					= false;
 let clearWrites 				= [];
@@ -146,13 +157,13 @@ cSel.onselection(function(coorda, coordb, width, height) {
 		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite, groupCounter]);
 		clearCount++;
 	};
-	
+
 	if(!clearCount) return;
-	
+
 	let estTime = Math.round(100 * (clearCount/state.worldModel.char_rate[0]) * (1+(limitFactor/10)))/100
 
 	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${estTime} sec(s)`);
-	
+
 	groupList[groupCounter+""] = clearCount;
 	groupCounter++;
 
@@ -190,7 +201,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 		if(num > 7) return `High limits will severely impact clearing speed`;
 
 		limitFactor = num;
-		
+
 		clearInterval(sendWritesInterval);
 		sendWritesInterval = setInterval(() => {
 			if(!clearWrites.length) return;
@@ -199,7 +210,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 				preserve_links: settings.decolor
 			});
 		}, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
-		
+
 		return `Set limit factor to ${num}`;
 	},
 	"set": (setting) => {
@@ -307,7 +318,6 @@ client_commands.cpa = () => {
 
 let sendWritesInterval = setInterval(() => {
 	if(!clearWrites.length) {
-		console.log(1);
 		groupList = {};
 		groupCounter = 0;
 		return;
