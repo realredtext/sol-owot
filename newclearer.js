@@ -1,5 +1,6 @@
-let limitFactor 				= 2.5;
+let limitFactor 				= 2.2;
 let groupCounter 				= 0;
+let rateLimitInUse				= state.worldModel.char_rate[0];
 let isPaused 					= false;
 let clearWrites 				= [];
 let settings 					= {decolor: false, linksonly: false};
@@ -146,13 +147,13 @@ cSel.onselection(function(coorda, coordb, width, height) {
 		clearWrites.push([eph.fty, eph.ftx, eph.fcy, eph.fcx, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), charToWrite, Math.floor(Math.random()*Number.MAX_SAFE_INTEGER), colorToWrite, bgColorToWrite, groupCounter]);
 		clearCount++;
 	};
-
+	
 	if(!clearCount) return;
-
-	let estTime = Math.round(100 * (clearCount/state.worldModel.char_rate[0]) * (1+(limitFactor/10)))/100
+	
+	let estTime = Math.round(100 * (clearCount/rateLimitInUse) * (1+(limitFactor/10)))/100
 
 	clearManager.core.send(`Clearing ${clearCount} chars in group ${groupCounter}, est. time: ${estTime} sec(s)`);
-
+	
 	groupList[groupCounter+""] = clearCount;
 	groupCounter++;
 
@@ -175,6 +176,18 @@ cSel.onselection(function(coorda, coordb, width, height) {
 	tileCache = {};
 });
 
+let sendWritesInterval = setInterval(() => {
+	if(!clearWrites.length) {
+		groupList = {};
+		groupCounter = 0;
+		return;
+	};
+	if(isPaused) return;
+	network.write(clearWrites.splice(0, editsToSend(rateLimitInUse)), {
+		preserve_links: settings.decolor
+	});
+}, timeToSendEdits(rateLimitInUse, state.worldModel.char_rate[1]) * (1 + limitFactor / 10));
+
 let { ManagerCommandWrapper } = use("realredtext/scripts-owot/managers.js");
 
 let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
@@ -190,16 +203,16 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 		if(num > 7) return `High limits will severely impact clearing speed`;
 
 		limitFactor = num;
-
+		
 		clearInterval(sendWritesInterval);
 		sendWritesInterval = setInterval(() => {
 			if(!clearWrites.length) return;
 			if(isPaused) return;
-			network.write(clearWrites.splice(0, editsToSend(state.worldModel.char_rate[0])), {
+			network.write(clearWrites.splice(0, editsToSend(rateLimitInUse)), {
 				preserve_links: settings.decolor
 			});
-		}, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
-
+		}, timeToSendEdits(rateLimitInUse, state.worldModel.char_rate[1]) * (1 + limitFactor / 10));
+		
 		return `Set limit factor to ${num}`;
 	},
 	"set": (setting) => {
@@ -239,7 +252,7 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
         return `Flushed all queued writes`;
     },
     "writes": () => {
-        return `${clearWrites.length} writes queued, ${Math.round(100*clearWrites.length/state.worldModel.char_rate[0])/100} sec to clear (est)`;
+        return `${clearWrites.length} writes queued, ${Math.round(100*clearWrites.length/rateLimitInUse)/100} sec to clear (est)`;
     },
 	"pause": () => {
 		isPaused = !isPaused;
@@ -297,25 +310,31 @@ let clearManager = new ManagerCommandWrapper("Clearer", "#FF0000", {
 		clearWrites = [...eph.unbumped];
 		setEph("unbumped", []);
 		return `Deleted group ${group}'s edits`;
+	},
+	"uselimit": (val) => {
+		let x = Number(val);
+		if(val.toLowerCase() === "reset") x = state.worldModel.char_rate[0];
+		if(Number.isNaN(x)) return `Invalid input`;
+		if(x < 0 || x > 1000000) return `Invalid input`;
+		if(Math.floor(x) !== x) return `Invalid input`;
+		clearInterval(sendWritesInterval);
+		rateLimitInUse = x;
+		
+		sendWritesInterval = setInterval(() => {
+			if(!clearWrites.length) {
+				groupList = {};
+				groupCounter = 0;
+				return;
+			};
+			if(isPaused) return;
+			network.write(clearWrites.splice(0, editsToSend(rateLimitInUse)), {
+				preserve_links: settings.decolor
+			});
+		}, timeToSendEdits(x, state.worldModel.char_rate[1]) * (1 + limitFactor / 10));
+		
+		return `Now sending ${x} edits / 1000 ms`;
 	}
 }, "clearer");
-
-client_commands.cpa = () => {
-	isPaused = !isPaused;
-	clearManager.core.send(`Set isPaused to ${isPaused}`);
-}
-
-let sendWritesInterval = setInterval(() => {
-	if(!clearWrites.length) {
-		groupList = {};
-		groupCounter = 0;
-		return;
-	};
-	if(isPaused) return;
-	network.write(clearWrites.splice(0, editsToSend(state.worldModel.char_rate[0])), {
-		preserve_links: settings.decolor
-	});
-}, timeToSendEdits(...state.worldModel.char_rate) * (1 + limitFactor / 10));
 
 menu.addOption("Clear area", () => {
 	cSel.startSelection();
